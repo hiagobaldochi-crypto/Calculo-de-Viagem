@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Cálculo Viagem</title>
+<meta name="theme-color" content="#123a5e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cálculo Viagem">
+<style>
+  :root{
+    color-scheme:light;
+    --bg:#f3f6f9;--surface:#ffffff;--ink:#123a5e;--muted:#5b6b7c;--line:#d6e0ea;
+    --navy:#123a5e;--blue:#4eaed6;--orange:#f96b0f;--erro:#b3360b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,sans-serif;line-height:1.5;
+    padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+  main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  header img{width:64px;height:64px;border-radius:14px}
+  h1{font-size:1.5rem;line-height:1.15;margin:0}
+  header p{margin:2px 0 0;color:var(--muted);font-size:.95rem}
+  h2{font-size:1.05rem;margin:0 0 12px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(18,58,94,.06)}
+  label{display:block;font-weight:600;margin:14px 0 4px}
+  h2+label{margin-top:0}
+  .dica{font-weight:400;color:var(--muted);font-size:.85rem}
+  input[type=text],input[type=number],input[type=password]{width:100%;font:inherit;color:var(--ink);background:var(--bg);
+    border:1px solid var(--line);border-radius:10px;padding:11px 14px}
+  input:focus{border-color:var(--blue)}
+  input:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
+  button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:11px 16px;cursor:pointer}
+  .primario{background:var(--orange);color:#fff;width:100%;margin-top:14px}
+  .secundario{background:transparent;color:var(--ink);border:1px solid var(--line);margin-top:8px;padding:8px 12px;font-weight:500;font-size:.9rem}
+  button:disabled{opacity:.6;cursor:default}
+  .status{margin-top:12px;font-size:.92rem;color:var(--muted)}
+  .status.erro{color:var(--erro);font-weight:600}
+  .status.ok{color:var(--ink)}
+  .check{display:flex;align-items:center;gap:10px;margin-top:16px;font-weight:600}
+  .check input{width:22px;height:22px;accent-color:var(--orange)}
+  .resultado{background:var(--navy);color:#fff;border-radius:16px;padding:20px;border-bottom:6px solid var(--orange)}
+  .resultado .rotulo{color:#bcd8ea}
+  .resultado .big{font-size:2.5rem;font-weight:700;line-height:1.15}
+  .resultado dl{margin:14px 0 0;display:grid;grid-template-columns:1fr auto;gap:4px 12px;color:#dcebf5}
+  .resultado dd{margin:0;text-align:right;font-weight:600;color:#fff}
+  .vazio{color:var(--muted);text-align:center;font-size:.95rem}
+  details{margin-top:4px}
+  summary{cursor:pointer;font-weight:600;padding:4px 0}
+  details p{font-size:.9rem;color:var(--muted);margin:8px 0}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon-192.png" alt="">
+    <div>
+      <h1>Cálculo Viagem</h1>
+      <p>Combustível e pedágios da sua viagem</p>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>Rota</h2>
+    <label for="origem">Origem</label>
+    <input id="origem" type="text" autocomplete="off" placeholder="ex.: Campinas, SP">
+    <button id="gps" type="button" class="secundario">Usar minha localização</button>
+    <label for="destino">Destino</label>
+    <input id="destino" type="text" autocomplete="off" placeholder="ex.: Campos do Jordão, SP">
+    <button id="buscar" type="button" class="primario">Buscar rota</button>
+    <div id="status" class="status" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <h2>Dados da viagem</h2>
+    <label for="distancia">Distância <span class="dica">(km, só ida)</span></label>
+    <input id="distancia" type="number" inputmode="decimal" min="0" step="any" placeholder="preenchida pela rota ou digite">
+    <label for="consumo">Consumo do carro <span class="dica">(km por litro)</span></label>
+    <input id="consumo" type="number" inputmode="decimal" min="0" step="any" placeholder="ex.: 11">
+    <label for="preco">Preço do litro <span class="dica">(R$)</span></label>
+    <input id="preco" type="number" inputmode="decimal" min="0" step="any" placeholder="ex.: 5,89">
+    <label for="pedagios">Pedágios <span class="dica">(R$, só ida)</span></label>
+    <input id="pedagios" type="number" inputmode="decimal" min="0" step="any" placeholder="preenchido pela rota ou digite">
+    <label class="check"><input id="idavolta" type="checkbox"> Ida e volta</label>
+  </div>
+
+  <div id="resultado" class="resultado" hidden aria-live="polite"></div>
+  <p id="vazio" class="vazio">Preencha distância, consumo e preço do litro para ver o gasto.</p>
+
+  <div class="card" style="margin-top:16px">
+    <details>
+      <summary>Pedágios automáticos (opcional)</summary>
+      <p>Sem configurar nada, o app calcula só a distância e você digita o valor dos pedágios. Para o app buscar os pedágios sozinho, cole abaixo uma chave de API do Google (Routes API). Ela fica salva apenas neste aparelho.</p>
+      <label for="chave">Chave de API do Google</label>
+      <input id="chave" type="password" autocomplete="off" placeholder="cole a chave aqui">
+      <button id="salvarchave" type="button" class="secundario">Salvar chave</button>
+      <button id="limparchave" type="button" class="secundario">Remover chave</button>
+      <div id="chavestatus" class="status" aria-live="polite"></div>
+    </details>
+  </div>
+</main>
+
+<script>
+  var brl = new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'});
+  var num = new Intl.NumberFormat('pt-BR', {maximumFractionDigits: 2});
+  var $ = function (id) { return document.getElementById(id); };
+  var coordsOrigem = null;
+
+  /* ---------- chave do Google (guardada só no aparelho) ---------- */
+  function lerChave() { try { return localStorage.getItem('gkey') || ''; } catch (e) { return ''; } }
+  function gravarChave(v) { try { if (v) localStorage.setItem('gkey', v); else localStorage.removeItem('gkey'); return true; } catch (e) { return false; } }
+  function mostrarChave() {
+    $('chavestatus').className = 'status ok';
+    $('chavestatus').textContent = lerChave() ? 'Chave salva. Os pedágios serão buscados automaticamente.' : 'Nenhuma chave salva.';
+  }
+  $('salvarchave').addEventListener('click', function () {
+    var v = $('chave').value.trim();
+    if (!v) { $('chavestatus').className = 'status erro'; $('chavestatus').textContent = 'Cole a chave antes de salvar.'; return; }
+    if (!gravarChave(v)) { $('chavestatus').className = 'status erro'; $('chavestatus').textContent = 'Não consegui salvar neste navegador.'; return; }
+    $('chave').value = ''; mostrarChave();
+  });
+  $('limparchave').addEventListener('click', function () { gravarChave(''); mostrarChave(); });
+  mostrarChave();
+
+  /* ---------- mensagens ---------- */
+  function status(msg, tipo) { var s = $('status'); s.className = 'status ' + (tipo || ''); s.textContent = msg; }
+
+  /* ---------- rota sem chave: OpenStreetMap (grátis) ---------- */
+  function geocodificar(q) {
+    var u = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&accept-language=pt-BR&q=' + encodeURIComponent(q);
+    return fetch(u).then(function (r) {
+      if (!r.ok) throw new Error('Falha ao localizar "' + q + '".');
+      return r.json();
+    }).then(function (j) {
+      if (!j.length) throw new Error('Não encontrei "' + q + '". Tente incluir cidade e estado.');
+      return {lat: +j[0].lat, lon: +j[0].lon};
+    });
+  }
+  function rotaOSM(o, d) {
+    var pO = coordsOrigem ? Promise.resolve(coordsOrigem) : geocodificar(o);
+    return Promise.all([pO, geocodificar(d)]).then(function (p) {
+      var u = 'https://router.project-osrm.org/route/v1/driving/' + p[0].lon + ',' + p[0].lat + ';' + p[1].lon + ',' + p[1].lat + '?overview=false';
+      return fetch(u);
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Não consegui calcular a rota agora. Tente de novo em instantes.');
+      return r.json();
+    }).then(function (j) {
+      if (!j.routes || !j.routes.length) throw new Error('Não encontrei rota de carro entre os dois pontos.');
+      return {km: j.routes[0].distance / 1000, pedagio: null};
+    });
+  }
+
+  /* ---------- rota com chave: Google Routes API (distância + pedágios) ---------- */
+  function rotaGoogle(o, d, chave) {
+    var corpo = {
+      origin: coordsOrigem ? {location: {latLng: {latitude: coordsOrigem.lat, longitude: coordsOrigem.lon}}} : {address: o},
+      destination: {address: d},
+      travelMode: 'DRIVE',
+      extraComputations: ['TOLLS'],
+      routeModifiers: {vehicleInfo: {emissionType: 'GASOLINE'}},
+      languageCode: 'pt-BR', regionCode: 'BR', units: 'METRIC'
+    };
+    return fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': chave,
+        'X-Goog-FieldMask': 'routes.distanceMeters,routes.travelAdvisory.tollInfo'
+      },
+      body: JSON.stringify(corpo)
+    }).then(function (r) {
+      return r.json().then(function (j) {
+        if (!r.ok) throw new Error('Google: ' + ((j.error && j.error.message) || 'erro ' + r.status));
+        return j;
+      });
+    }).then(function (j) {
+      if (!j.routes || !j.routes.length) throw new Error('Não encontrei rota de carro entre os dois pontos.');
+      var rota = j.routes[0], toll = rota.travelAdvisory && rota.travelAdvisory.tollInfo;
+      var res = {km: rota.distanceMeters / 1000, pedagio: 0, semPreco: false};
+      if (toll) {
+        var p = toll.estimatedPrice && toll.estimatedPrice[0];
+        if (p) res.pedagio = Number(p.units || 0) + (p.nanos || 0) / 1e9;
+        else { res.pedagio = null; res.semPreco = true; }
+      }
+      return res;
+    });
+  }
+
+  /* ---------- botão Buscar rota ---------- */
+  $('buscar').addEventListener('click', function () {
+    var o = $('origem').value.trim(), d = $('destino').value.trim(), chave = lerChave();
+    if (!o || !d) { status('Preencha origem e destino.', 'erro'); return; }
+    var btn = $('buscar'); btn.disabled = true; status('Buscando rota...');
+    (chave ? rotaGoogle(o, d, chave) : rotaOSM(o, d)).then(function (r) {
+      $('distancia').value = r.km.toFixed(1);
+      var msg = 'Rota encontrada: ' + num.format(r.km) + ' km (só ida).';
+      if (chave) {
+        if (r.semPreco) { $('pedagios').value = ''; msg += ' Há pedágio na rota, mas o valor não foi informado. Digite abaixo.'; }
+        else if (r.pedagio === 0) { $('pedagios').value = '0'; msg += ' Nenhum pedágio encontrado na rota.'; }
+        else { $('pedagios').value = r.pedagio.toFixed(2); msg += ' Pedágios: ' + brl.format(r.pedagio) + ' (estimativa do Google, só ida).'; }
+      } else {
+        msg += ' Digite o valor dos pedágios ou configure a chave do Google no final da página.';
+      }
+      status(msg, 'ok'); atualizar();
+    }).catch(function (e) {
+      status(e.message || 'Algo deu errado. Tente de novo.', 'erro');
+    }).then(function () { btn.disabled = false; });
+  });
+
+  /* ---------- localização do aparelho ---------- */
+  $('gps').addEventListener('click', function () {
+    if (!navigator.geolocation) { status('Este aparelho não oferece localização.', 'erro'); return; }
+    status('Obtendo sua localização...');
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      coordsOrigem = {lat: pos.coords.latitude, lon: pos.coords.longitude};
+      $('origem').value = 'Minha localização';
+      status('Origem definida pela sua localização.', 'ok');
+    }, function () {
+      status('Não consegui obter a localização. Verifique a permissão ou digite a origem.', 'erro');
+    }, {enableHighAccuracy: false, timeout: 15000});
+  });
+  $('origem').addEventListener('input', function () { coordsOrigem = null; });
+
+  /* ---------- cálculo ---------- */
+  function lerNum(id) { return +$(id).value.replace(',', '.'); }
+  function atualizar() {
+    var km = lerNum('distancia'), c = lerNum('consumo'), p = lerNum('preco'), ped = lerNum('pedagios') || 0;
+    var f = $('idavolta').checked ? 2 : 1, box = $('resultado');
+    if (!(km > 0 && c > 0 && p > 0) || ped < 0) { box.hidden = true; $('vazio').hidden = false; return; }
+    var kmTotal = km * f, litros = kmTotal / c, comb = litros * p, pedTotal = ped * f, total = comb + pedTotal;
+    $('vazio').hidden = true; box.hidden = false;
+    box.innerHTML = '<div class="rotulo">Gasto estimado' + (f === 2 ? ' (ida e volta)' : '') + '</div>' +
+      '<div class="big">' + brl.format(total) + '</div>' +
+      '<dl><dt>Combustível</dt><dd>' + brl.format(comb) + '</dd>' +
+      '<dt>Pedágios</dt><dd>' + brl.format(pedTotal) + '</dd>' +
+      '<dt>Litros necessários</dt><dd>' + num.format(litros) + ' L</dd>' +
+      '<dt>Distância total</dt><dd>' + num.format(kmTotal) + ' km</dd>' +
+      '<dt>Custo por km</dt><dd>' + brl.format(total / kmTotal) + '</dd></dl>';
+  }
+  ['distancia', 'consumo', 'preco', 'pedagios'].forEach(function (id) { $(id).addEventListener('input', atualizar); });
+  $('idavolta').addEventListener('change', atualizar);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
+</script>
+</body>
+</html>
